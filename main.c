@@ -38,7 +38,7 @@ void PrintTable(int *table)
         printf("\t");
         
         printf("|");
-        //Print details
+        //Print details here:)
         for (int x = 0; x < 9; x++)
         {	
         	printf(" %d", table[y * 9 + x]);
