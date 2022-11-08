@@ -2,6 +2,14 @@
 
 void PrintTable(int* table);
 
+//Wave Function Collapse
+struct item
+{
+	bool isSuperposition = true;
+	int[9] posibleStates;
+	int length;
+}
+
 int main()
 {   
     int table[9][9] = {
@@ -47,4 +55,20 @@ void PrintTable(int *table)
         }
        
     }
+}
+
+void ParseTable()
+{
+	//Create items for all and collapse those which are now given,
+	printf("Table parsed");
+}
+
+void Collapse()
+{
+	
+}
+
+void Propagate()
+{
+	
 }
