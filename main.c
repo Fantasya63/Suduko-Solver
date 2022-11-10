@@ -1,18 +1,24 @@
 #include <stdio.h>
 
-void PrintTable(int* table);
-void ParseTable(int* table);
-void Propagate(int xPos, int yPos, int value, void* items);
+#define true 1
+#define false 0
 
+typedef int bool;
 
 typedef struct
 {
     int posibleStates[9];
     int length;
-
+    bool isCollapsed;
 } Superposition;
 
 
+void PrintTable(int table[9][9]);
+void ParseTable(int table[9][9]);
+void Propagate(int xPos, int yPos, int value, Superposition items[9][9]);
+void Collapse(int xPos, int yPos, int value, Superposition items[9][9], int table[9][9]);
+
+// TODO: Use linked lists to avoid looping through all 81 items
 int main()
 {   
     int table[9][9] = {
@@ -36,7 +42,27 @@ int main()
 }
 
 
-void PrintTable(int *table)
+void InitSuperpositions(Superposition items[9][9])
+{
+    for (int y = 0; y < 9; y++)
+    {
+        for (int x = 0; x < 9; x++)
+        {
+            Superposition* item = &items[y][x];
+            item->length = 9;
+            item->isCollapsed = 0;
+
+            //Dirty?
+            for (int i = 0; i < 9; i++)
+            {
+                items[y][x].posibleStates[i] = i;
+            }
+        }
+    }
+}
+
+
+void PrintTable(int table[9][9])
 {
     printf("\t+-------+-------+-------+\n");
     for (int y = 0; y < 9; y++)
@@ -47,7 +73,7 @@ void PrintTable(int *table)
         //Print details here:)
         for (int x = 0; x < 9; x++)
         {	
-        	printf(" %d", table[y * 9 + x]);
+        	printf(" %d", table[y][x]);
         	if ((x + 1) % 3 == 0)
         	{
         		printf(" |");
@@ -64,47 +90,94 @@ void PrintTable(int *table)
 }
 
 
-void ParseTable(int* table)
+void ParseTable(int table[9][9])
 {
     Superposition items[9][9];
-    int superPositionsLeft = 81;
+    int numSuperpositionsLeft = 81;
 
-	//Create items for all and collapse those which are now given,
+    InitSuperpositions(items);
+
+	//Find and collapse those which are now given,
     for (int y = 0; y < 9; y++)
     {
         for (int x = 0; x < 9; x++)
         {
             //read the table
-            int value = table[y * 9 + x];
+            int value = table[y][x];
             
             if (value != 0)
             {
-                superPositionsLeft -= 1;
+                // TODO: Refactor to avoid setting values twice during init and propagate
+                Collapse(x, y, value, items, table);
                 Propagate(x, y, value, items);
-                continue;
-            }
-
-            //set superposition defaults
-            items[x][y].length = 9;
-
-            //Dirty?
-            for (int i = 0; i < 9; i++)
-            {
-                items[x][y].posibleStates[i] = i;
+                numSuperpositionsLeft -= 1;
             }
         }
     }
-    printf("Number of superpositions left: %d\n", superPositionsLeft);
+
+    //Wave Function Collapse
+    while (numSuperpositionsLeft > 0)
+    {
+        //pick the one with smallest possible states
+        int minState = 100;
+        int minX = 0, minY = 0;
+
+        for (int y = 0; y < 9; y++)
+        {
+            for (int x = 0; x < 9; x++)
+            {
+                Superposition* item = &items[y][x];
+
+                if (item->isCollapsed)
+                    continue;
+
+                if (minState < item->length)
+                {
+                    minState = item->length;
+                    minX = x;
+                    minY = y;
+                }
+            }
+        }
+
+        int value = 0;
+        //Pick a state to collapse to
+        for (int i = 0; i < 9; i++)
+        {
+            Superposition* item = &items[minY][minX];
+
+            if (item->posibleStates[i] == 0)
+                continue;
+
+            value = i + 1;
+        }
+
+        Collapse(minX, minY, value, items, table);
+        Propagate(minX, minY, value, items);
+        numSuperpositionsLeft -= 1;
+        printf("Number of superpositions left: %d\n", numSuperpositionsLeft);
+    }
+    
 }
 
 
-void Collapse()
+void Collapse(int xPos, int yPos, int value, Superposition items[9][9], int table[9][9])
 {
-	
+    Superposition* item = &items[yPos][xPos];
+    if (item->isCollapsed)
+        return;
+
+    printf("x: %d, y: %d, length: %d, value: %d\n", xPos, yPos, item->length, value);
+
+    item->length = 100;
+    item->posibleStates[value - 1] = 0;
+    item->isCollapsed = 1;
+
+    table[yPos][xPos] = value;
 }
 
 
-void _PropagateBox(int xPos, int yPos, int value, Superposition* items)
+void _PropagateBox(int xPos, int yPos, int value, Superposition items[9][9])
 {
     //get box id
     int xBox = xPos / 3;
@@ -119,16 +192,14 @@ void _PropagateBox(int xPos, int yPos, int value, Superposition* items)
             int yPos = y + yBox;
 
             //Get Item
-            Superposition* item = items + yPos * 9 + xPos;
+            Superposition* item = &items[yPos][xPos];
+            if (item->isCollapsed)
+                continue;
 
-            for (int i = 0; i < item->length; i++)
+            if (item->posibleStates[value - 1] == value)
             {
-                if (item->posibleStates[i] == value)
-                {
-                    item->posibleStates[i] = -1; // -1 means invalid
-                    item->length -= 1;
-                    break;
-                }
+                item->posibleStates[value - 1] = 0;
+                item->length -= 1;
             }
         }
     }
@@ -136,46 +207,45 @@ void _PropagateBox(int xPos, int yPos, int value, Superposition* items)
 }
 
 
-void _PropagateRow(int yPos, int value, Superposition* items)
+void _PropagateRow(int yPos, int value, Superposition items[9][9])
 {
     for (int x = 0; x < 9; x++)
     {
-        Superposition* item = items + yPos * 9 + x;
+        Superposition* item = &items[yPos][x];
 
-        for (int i = 0; i < item->length; i++)
+        if (item->isCollapsed)
+            continue;
+
+        if (item->posibleStates[value - 1] == value)
         {
-            if (item->posibleStates[i] == value)
-            {
-                item->posibleStates[i] = -1; // -1 means invalid
-                item->length -= 1;
-                break;
-            }
+            item->posibleStates[value - 1] = 0;
+            item->length -= 1;
         }
     }
 }
 
 
-void _PropagateColumn(int xPos, int value, Superposition* items)
+void _PropagateColumn(int xPos, int value, Superposition items[9][9])
 {
     for (int y = 0; y < 9; y++)
     {
-        Superposition* item = items + y * 9 + xPos;
+        Superposition* item = &items[y][xPos];
 
-        for (int i = 0; i < item->length; i++)
+        if (item->isCollapsed)
+            continue;
+
+        if (item->posibleStates[value - 1] == value)
         {
-            if (item->posibleStates[i] == value)
-            {
-                item->posibleStates[i] = -1; // -1 means invalid
-                item->length -= 1;
-                break;
-            }
+            item->posibleStates[value - 1] = 0;
+            item->length -= 1;
         }
     }
 }
 
 
-void Propagate(int xPos, int yPos, int value, Superposition* items)
+void Propagate(int xPos, int yPos, int value, Superposition items[9][9])
 {
+    printf("PROPAGATE: x: %d, y: %d, value: %d\n", xPos, yPos, value);
     _PropagateBox(xPos, yPos, value, items);
     _PropagateRow(yPos, value, items);
     _PropagateColumn(xPos, value, items);
