@@ -2,7 +2,6 @@
 
 #define true 1
 #define false 0
-
 typedef int bool;
 
 typedef struct
@@ -10,17 +9,21 @@ typedef struct
     int posibleStates[9];
     int length;
     bool isCollapsed;
+
 } Superposition;
 
 
 void PrintTable(int table[9][9]);
-void ParseTable(int table[9][9]);
+void WaveFunctionCollapse(Superposition items[9][9], int table[9][9]);
 void Propagate(int xPos, int yPos, int value, Superposition items[9][9]);
 void Collapse(int xPos, int yPos, int value, Superposition items[9][9], int table[9][9]);
+void InitSuperpositions(Superposition items[9][9]);
+
 
 // TODO: Use linked lists to avoid looping through all 81 items
 int main()
 {   
+    // Input a valid suduko problem here
     int table[9][9] = {
     	{5,0,6, 0,0,9, 3,0,2},
     	{0,0,0, 0,6,0, 0,5,0},
@@ -35,7 +38,13 @@ int main()
     	{1,5,0, 0,0,6, 4,0,9}
 	};
 
-	ParseTable(table);
+    Superposition items[9][9];
+    InitSuperpositions(items);
+
+	
+    WaveFunctionCollapse(items, table);
+
+
     PrintTable(table);
 
     getchar(); //Not required but program exits immediately on Visual Studio without it
@@ -64,6 +73,10 @@ void InitSuperpositions(Superposition items[9][9])
 
 void PrintTable(int table[9][9])
 {
+    printf("Wave Function Collapse Algorithm\n");
+    printf("Suduko Solver\n\n");
+
+
     printf("\t+-------+-------+-------+\n");
     for (int y = 0; y < 9; y++)
     {
@@ -90,24 +103,20 @@ void PrintTable(int table[9][9])
 }
 
 
-void ParseTable(int table[9][9])
+void WaveFunctionCollapse(Superposition items[9][9], int table[9][9])
 {
-    Superposition items[9][9];
     int numSuperpositionsLeft = 81;
 
-    InitSuperpositions(items);
-
+    
 	//Find and collapse those which are now given,
     for (int y = 0; y < 9; y++)
     {
         for (int x = 0; x < 9; x++)
         {
-            //read the table
             int value = table[y][x];
             
             if (value != 0)
             {
-                // TODO: Refactor to avoid setting values twice during init and propagate
                 Collapse(x, y, value, items, table);
                 Propagate(x, y, value, items);
                 numSuperpositionsLeft -= 1;
@@ -165,9 +174,9 @@ void Collapse(int xPos, int yPos, int value, Superposition items[9][9], int tabl
     if (item->isCollapsed)
         return;
 
-    item->length = 1000;
+    item->length = 1000; // Set to a high number sothat the wave function will not pick it up
     item->posibleStates[value - 1] = 0;
-    item->isCollapsed = 1;
+    item->isCollapsed = true;
 
     table[yPos][xPos] = value;
 }
