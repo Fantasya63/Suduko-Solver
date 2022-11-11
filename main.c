@@ -155,9 +155,7 @@ void ParseTable(int table[9][9])
         Collapse(minX, minY, value, items, table);
         Propagate(minX, minY, value, items);
         numSuperpositionsLeft -= 1;
-        printf("Number of superpositions left: %d\n", numSuperpositionsLeft);
     }
-    
 }
 
 
@@ -166,8 +164,6 @@ void Collapse(int xPos, int yPos, int value, Superposition items[9][9], int tabl
     Superposition* item = &items[yPos][xPos];
     if (item->isCollapsed)
         return;
-
-    printf("x: %d, y: %d, length: %d, value: %d\n", xPos, yPos, item->length, value);
 
     item->length = 1000;
     item->posibleStates[value - 1] = 0;
@@ -245,7 +241,6 @@ void _PropagateColumn(int xPos, int value, Superposition items[9][9])
 
 void Propagate(int xPos, int yPos, int value, Superposition items[9][9])
 {
-    printf("PROPAGATE: x: %d, y: %d, value: %d\n", xPos, yPos, value);
     _PropagateBox(xPos, yPos, value, items);
     _PropagateRow(yPos, value, items);
     _PropagateColumn(xPos, value, items);
