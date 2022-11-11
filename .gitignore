@@ -59,3 +59,4 @@ dkms.conf
 *.vcxproj.filters
 *.vcxproj.user
 x64/
+cls

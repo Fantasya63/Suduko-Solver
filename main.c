@@ -55,7 +55,7 @@ void InitSuperpositions(Superposition items[9][9])
             //Dirty?
             for (int i = 0; i < 9; i++)
             {
-                items[y][x].posibleStates[i] = i;
+                items[y][x].posibleStates[i] = i + 1;
             }
         }
     }
@@ -131,7 +131,7 @@ void ParseTable(int table[9][9])
                 if (item->isCollapsed)
                     continue;
 
-                if (minState < item->length)
+                if (minState > item->length)
                 {
                     minState = item->length;
                     minX = x;
@@ -169,7 +169,7 @@ void Collapse(int xPos, int yPos, int value, Superposition items[9][9], int tabl
 
     printf("x: %d, y: %d, length: %d, value: %d\n", xPos, yPos, item->length, value);
 
-    item->length = 100;
+    item->length = 1000;
     item->posibleStates[value - 1] = 0;
     item->isCollapsed = 1;
 
@@ -188,8 +188,8 @@ void _PropagateBox(int xPos, int yPos, int value, Superposition items[9][9])
     {
         for (int x = 0; x < 3; x++)
         {
-            int xPos = x + xBox;
-            int yPos = y + yBox;
+            int xPos = x + xBox * 3;
+            int yPos = y + yBox * 3;
 
             //Get Item
             Superposition* item = &items[yPos][xPos];
